@@ -43,8 +43,8 @@ public class ZoneAvertissementBoucle : MonoBehaviour
             zoneMortelle.enabled = true;
             spriteRenderer.color = couleurMortelle;
 
-            // Pendant l'attaque, tu peux même faire trembler l'écran pour plus d'impact !
-            if (CameraShake.Instance != null)
+            // NOUVEAUTÉ : On vérifie si l'objet est visible à l'écran avant de secouer !
+            if (spriteRenderer.isVisible && CameraShake.Instance != null)
             {
                 CameraShake.Instance.Secouer(0.1f, 0.2f);
             }

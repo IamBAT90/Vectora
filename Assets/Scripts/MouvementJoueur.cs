@@ -162,6 +162,7 @@ public class MouvementJoueur : MonoBehaviour
 
     IEnumerator FaireUnDash()
     {
+        CameraShake.Instance.Secouer(0.1f, 0.2f);
         enTrainDeDash = true;
         float vitesseNormale = vitesse;
         vitesse = vitesse * multiplicateurDash; 

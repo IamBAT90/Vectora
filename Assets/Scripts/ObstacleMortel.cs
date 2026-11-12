@@ -9,6 +9,7 @@ public class ObstacleMortel : MonoBehaviour
         // On vérifie si l'objet qui nous touche a bien le tag "Player"
         if (collision.CompareTag("Player"))
         {
+            CameraShake.Instance.Secouer(0.2f, 0.5f);
             // On recharge la scène actuelle depuis le début (Game Over)
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }

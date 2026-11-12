@@ -3,16 +3,18 @@ using UnityEngine;
 public class Tourelle : MonoBehaviour
 {
     [Header("Paramètres de Tir")]
-    public GameObject prefabProjectile; // Le modèle de la balle à tirer
-    public Transform pointDeTir; // L'endroit d'où part le tir
-    public float cadenceDeTir = 2f; // Temps en secondes entre chaque tir
+    public GameObject prefabProjectile; 
+    public Transform pointDeTir; 
+    public float cadenceDeTir = 2f; 
+
+    [Header("Paramètres de Détection")]
+    public float portee = 10f; // La distance maximale à laquelle la tourelle repère le joueur
 
     private Transform joueur;
     private float timerTir;
 
     void Start()
     {
-        // Le script cherche automatiquement le joueur grâce à son Tag "Player"
         GameObject objetJoueur = GameObject.FindGameObjectWithTag("Player");
         if (objetJoueur != null)
         {
@@ -24,31 +26,48 @@ public class Tourelle : MonoBehaviour
 
     void Update()
     {
-        if (joueur == null) return; // Sécurité si le joueur est mort/absent
+        if (joueur == null) return; 
 
-        // On diminue le chronomètre
-        timerTir -= Time.deltaTime;
-        
-        if (timerTir <= 0f)
+        // On calcule la distance exacte entre la tourelle et le joueur
+        float distanceJoueur = Vector2.Distance(transform.position, joueur.position);
+
+        // Si le joueur est assez proche, la tourelle s'active
+        if (distanceJoueur <= portee)
         {
-            Tirer();
-            timerTir = cadenceDeTir; // On réinitialise le chrono
+            timerTir -= Time.deltaTime;
+            
+            if (timerTir <= 0f)
+            {
+                Tirer();
+                timerTir = cadenceDeTir; 
+            }
+        }
+        else
+        {
+            // Optionnel : si le joueur sort de la zone, on réinitialise le chrono 
+            // pour éviter que la tourelle ne tire à la microseconde où il remet un pied dedans.
+            timerTir = cadenceDeTir; 
         }
     }
 
     void Tirer()
     {
-        // Calcul de la trajectoire du point de tir jusqu'au joueur
         Vector2 directionVersJoueur = (joueur.position - pointDeTir.position).normalized;
-
-        // Création du projectile dans la scène
         GameObject nouveauProjectile = Instantiate(prefabProjectile, pointDeTir.position, Quaternion.identity);
 
-        // On récupère le script du projectile qu'on vient de créer pour lui donner la direction
         MouvementProjectile scriptProjectile = nouveauProjectile.GetComponent<MouvementProjectile>();
         if (scriptProjectile != null)
         {
             scriptProjectile.DefinirDirection(directionVersJoueur);
         }
+    }
+
+    // --- LE BONUS LEVEL DESIGN ---
+    // Cette fonction magique dessine la portée de la tourelle dans l'éditeur (fenêtre Scene).
+    // Elle ne sera visible que par toi pendant la création, pas par le joueur pendant le jeu !
+    void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, portee);
     }
 }

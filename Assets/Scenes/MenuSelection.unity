@@ -223,6 +223,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   vitesse: 6
+  toucheHaut: 119
+  toucheBas: 115
+  toucheGauche: 97
+  toucheDroite: 100
+  toucheAction: 32
+  toucheInventaireGauche: 113
+  toucheInventaireDroite: 101
   pouvoirsDebloques: 
   affichagePouvoirActuel: {fileID: 0}
   multiplicateurDash: 4
@@ -765,12 +772,12 @@ MonoBehaviour:
   m_margin: {x: 0, y: 0, z: 0, w: 0}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
-  _SortingLayer: 0
-  _SortingLayerID: 0
-  _SortingOrder: 0
   m_hasFontAssetChanged: 0
   m_renderer: {fileID: 1488391038}
   m_maskType: 0
+  _SortingLayer: 0
+  _SortingLayerID: 0
+  _SortingOrder: 0
 --- !u!23 &1488391038
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -826,6 +833,7 @@ GameObject:
   - component: {fileID: 1498889915}
   - component: {fileID: 1498889918}
   - component: {fileID: 1498889919}
+  - component: {fileID: 1498889920}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -966,6 +974,18 @@ MonoBehaviour:
   cible: {fileID: 388032314}
   vitesseLissage: 5
   decalage: {x: 0, y: 0, z: -10}
+--- !u!114 &1498889920
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1498889914}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b1cd8872bf7a27d4db8e8c22018f3f58, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1536519424
 GameObject:
   m_ObjectHideFlags: 0
@@ -1327,12 +1347,12 @@ MonoBehaviour:
   m_margin: {x: 0, y: 0, z: 0, w: 0}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
-  _SortingLayer: 0
-  _SortingLayerID: 0
-  _SortingOrder: 0
   m_hasFontAssetChanged: 0
   m_renderer: {fileID: 1942155783}
   m_maskType: 0
+  _SortingLayer: 0
+  _SortingLayerID: 0
+  _SortingOrder: 0
 --- !u!23 &1942155783
 MeshRenderer:
   m_ObjectHideFlags: 0

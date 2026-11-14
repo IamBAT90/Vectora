@@ -1,17 +1,17 @@
 using UnityEngine;
-using UnityEngine.SceneManagement; // Permet de gérer le rechargement du niveau
 
 public class ObstacleMortel : MonoBehaviour
 {
-    // Cette fonction se déclenche automatiquement quand un objet entre dans le Trigger
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        // On vérifie si l'objet qui nous touche a bien le tag "Player"
         if (collision.CompareTag("Player"))
         {
-            CameraShake.Instance.Secouer(0.2f, 0.5f);
-            // On recharge la scène actuelle depuis le début (Game Over)
-            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+            // On cherche le nouveau gestionnaire de mort sur le joueur
+            GestionMortJoueur gestionMort = collision.GetComponent<GestionMortJoueur>();
+            if (gestionMort != null)
+            {
+                gestionMort.Mourir(); // Déclenche la séquence dramatique !
+            }
         }
     }
 }

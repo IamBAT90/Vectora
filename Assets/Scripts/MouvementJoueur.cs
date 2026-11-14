@@ -9,6 +9,10 @@ public class MouvementJoueur : MonoBehaviour
     [Header("Déplacement")]
     public float vitesse = 5f;
 
+    [Header("Rotation")]
+    public float vitesseRotation = 20f; // Plus c'est élevé, plus le cube tourne vite vers sa cible
+    private float angleCible = 0f;
+
     [Header("Touches de Déplacement")]
     public KeyCode toucheHaut = KeyCode.W;
     public KeyCode toucheBas = KeyCode.S;
@@ -90,9 +94,20 @@ public class MouvementJoueur : MonoBehaviour
 
     void FixedUpdate()
     {
-        // NOUVEAUTÉ : On utilise "fixedUnscaledDeltaTime". 
-        // Ainsi, le joueur se déplace en fonction du temps réel de la vraie vie, et ignore le ralenti du jeu !
+        // 1. Le déplacement physique
         rb.MovePosition(rb.position + directionMouvement.normalized * vitesse * Time.fixedUnscaledDeltaTime);
+
+        // 2. Mise à jour de la cible de rotation (uniquement si on touche au joystick/clavier)
+        if (directionMouvement != Vector2.zero)
+        {
+            angleCible = Mathf.Atan2(directionMouvement.y, directionMouvement.x) * Mathf.Rad2Deg - 90f;
+        }
+
+        // 3. Application de la rotation (EN PERMANENCE, même quand on est à l'arrêt !)
+        // Comme cette ligne s'exécute 50 fois par seconde, même si un mur essaie 
+        // de faire tourner ton cube, le code remettra l'angle droit instantanément.
+        float angleLisse = Mathf.LerpAngle(rb.rotation, angleCible, vitesseRotation * Time.fixedUnscaledDeltaTime);
+        rb.MoveRotation(angleLisse);
     }
 
     public void DebloquerPouvoir(TypePouvoir nouveauPouvoir)
@@ -165,10 +180,22 @@ public class MouvementJoueur : MonoBehaviour
         
         RaycastHit2D hit = Physics2D.Raycast(rb.position, directionSaut, distanceTeleportation, LayerMask.GetMask("wall"));
 
-        if (hit.collider != null) rb.position = hit.point - (directionSaut * 0.1f);
-        else rb.position = rb.position + (directionSaut * distanceTeleportation);
+        // 1. On calcule la destination cible
+        Vector2 destination = (hit.collider != null) ? hit.point - (directionSaut * 0.1f) : rb.position + (directionSaut * distanceTeleportation);
+
+        // 2. On coupe l'interpolation pour éviter l'effet de glissade
+        rb.interpolation = RigidbodyInterpolation2D.None;
         
-        // NOUVEAUTÉ : Temps de recharge basé sur le temps réel
+        // 3. On téléporte la physique ET le visuel instantanément
+        rb.position = destination;
+        transform.position = destination; 
+        
+        // 4. On attend une frame physique pour que le moteur encaisse le choc
+        yield return new WaitForFixedUpdate();
+        
+        // 5. On remet l'interpolation pour que les déplacements redeviennent fluides
+        rb.interpolation = RigidbodyInterpolation2D.Interpolate;
+
         yield return new WaitForSecondsRealtime(tempsRechargeTeleportation);
         teleportationPrete = true;
     }

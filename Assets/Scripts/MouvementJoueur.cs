@@ -30,6 +30,7 @@ public class MouvementJoueur : MonoBehaviour
 
     [Header("Interface")]
     public InterfacePouvoirs interfacePouvoirs;
+    public GameObject fondHUD;
 
     [Header("Paramètres Dash")]
     public float multiplicateurDash = 3f;
@@ -136,7 +137,17 @@ public class MouvementJoueur : MonoBehaviour
 
     void MettreAJourAffichage()
     {
-        if (interfacePouvoirs != null && pouvoirsDebloques.Count > 0)
+        // On vérifie si on a au moins 1 pouvoir
+        bool aDesPouvoirs = pouvoirsDebloques.Count > 0;
+
+        // 1. On active ou désactive visuellement tout le fond (et les textes enfants)
+        if (fondHUD != null)
+        {
+            fondHUD.SetActive(aDesPouvoirs);
+        }
+
+        // 2. Si on a des pouvoirs, on envoie les textes à l'interface
+        if (interfacePouvoirs != null && aDesPouvoirs)
         {
             string[] nomsPouvoirs = new string[pouvoirsDebloques.Count];
             for (int i = 0; i < pouvoirsDebloques.Count; i++)

@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem; // Indispensable pour le New Input System
 using System.Collections;
 using System.Collections.Generic;
 
@@ -6,27 +7,13 @@ public class MouvementJoueur : MonoBehaviour
 {
     public enum TypePouvoir { Aucun, Dash, Teleportation, Ralenti, Miniature }
 
-    [Header("Déplacement")]
+    [Header("Déplacement & Rotation")]
     public float vitesse = 5f;
-
-    [Header("Rotation")]
-    public float vitesseRotation = 20f; // Plus c'est élevé, plus le cube tourne vite vers sa cible
-    private float angleCible = 0f;
-
-    [Header("Touches de Déplacement")]
-    public KeyCode toucheHaut = KeyCode.W;
-    public KeyCode toucheBas = KeyCode.S;
-    public KeyCode toucheGauche = KeyCode.A;
-    public KeyCode toucheDroite = KeyCode.D;
-
-    [Header("Touches d'Action")]
-    public KeyCode toucheAction = KeyCode.Space;
-    public KeyCode toucheInventaireGauche = KeyCode.Q;
-    public KeyCode toucheInventaireDroite = KeyCode.E;
+    public float vitesseRotation = 20f;
 
     [Header("Inventaire des Pouvoirs")]
     public List<TypePouvoir> pouvoirsDebloques = new List<TypePouvoir>();
-    private int indexPouvoirActuel = 0; 
+    private int indexPouvoirActuel = 0;
 
     [Header("Interface")]
     public InterfacePouvoirs interfacePouvoirs;
@@ -41,16 +28,17 @@ public class MouvementJoueur : MonoBehaviour
     public float tempsRechargeTeleportation = 1f;
 
     [Header("Paramètres Ralenti")]
-    public float facteurRalenti = 0.5f; 
+    public float facteurRalenti = 0.5f;
     public float dureeRalenti = 3f;
 
     [Header("Paramètres Miniature")]
-    public float facteurTaille = 0.5f; 
+    public float facteurTaille = 0.5f;
     public float dureeMiniature = 3f;
 
     private Rigidbody2D rb;
     private Vector2 directionMouvement;
-    
+    private float angleCible = 0f;
+
     private bool enTrainDeDash = false;
     private bool teleportationPrete = true;
     private bool enTrainDeRalentir = false;
@@ -59,70 +47,68 @@ public class MouvementJoueur : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
-
-        toucheHaut = (KeyCode)System.Enum.Parse(typeof(KeyCode), PlayerPrefs.GetString("ToucheHaut", "W"));
-        toucheBas = (KeyCode)System.Enum.Parse(typeof(KeyCode), PlayerPrefs.GetString("ToucheBas", "S"));
-        toucheGauche = (KeyCode)System.Enum.Parse(typeof(KeyCode), PlayerPrefs.GetString("ToucheGauche", "A"));
-        toucheDroite = (KeyCode)System.Enum.Parse(typeof(KeyCode), PlayerPrefs.GetString("ToucheDroite", "D"));
-
-        toucheAction = (KeyCode)System.Enum.Parse(typeof(KeyCode), PlayerPrefs.GetString("ToucheAction", "Space"));
-        toucheInventaireGauche = (KeyCode)System.Enum.Parse(typeof(KeyCode), PlayerPrefs.GetString("ToucheInvGauche", "Q"));
-        toucheInventaireDroite = (KeyCode)System.Enum.Parse(typeof(KeyCode), PlayerPrefs.GetString("ToucheInvDroite", "E"));
-
         MettreAJourAffichage();
     }
 
-    void Update()
+    // --- NOUVELLES FONCTIONS APPELÉES PAR LE PLAYER INPUT ---
+
+    void OnMove(InputValue valeur)
     {
-        float moveX = 0f;
-        float moveY = 0f;
+        // Récupère directement le Vector2 (clavier, stick manette 360°, ou joystick mobile)
+        directionMouvement = valeur.Get<Vector2>();
+    }
 
-        if (Input.GetKey(toucheGauche)) moveX -= 1f;
-        if (Input.GetKey(toucheDroite)) moveX += 1f;
-        if (Input.GetKey(toucheHaut)) moveY += 1f;
-        if (Input.GetKey(toucheBas)) moveY -= 1f;
-
-        directionMouvement = new Vector2(moveX, moveY).normalized;
-
+    void OnAction()
+    {
         if (pouvoirsDebloques.Count > 0)
         {
-            if (Input.GetKeyDown(toucheInventaireGauche)) ChangerPouvoir(-1);
-            else if (Input.GetKeyDown(toucheInventaireDroite)) ChangerPouvoir(1);
-
-            if (Input.GetKeyDown(toucheAction)) UtiliserPouvoirActuel();
+            UtiliserPouvoirActuel();
         }
     }
 
+    void OnInventaireGauche()
+    {
+        if (pouvoirsDebloques.Count > 0)
+        {
+            ChangerPouvoir(-1);
+        }
+    }
+
+    void OnInventaireDroite()
+    {
+        if (pouvoirsDebloques.Count > 0)
+        {
+            ChangerPouvoir(1);
+        }
+    }
+
+    // --- PHYSIQUE ET ROTATION 360° ---
+
     void FixedUpdate()
     {
-        // 1. Le déplacement physique
-        rb.MovePosition(rb.position + directionMouvement.normalized * vitesse * Time.fixedUnscaledDeltaTime);
+        // ClampMagnitude(1f) évite d'aller plus vite en diagonale au clavier tout en gardant la sensibilité du stick
+        Vector2 deplacement = Vector2.ClampMagnitude(directionMouvement, 1f);
+        rb.MovePosition(rb.position + deplacement * vitesse * Time.fixedUnscaledDeltaTime);
 
-        // 2. Mise à jour de la cible de rotation (uniquement si on touche au joystick/clavier)
-        if (directionMouvement != Vector2.zero)
+        // On met à jour l'angle si le stick/clavier dépasse une petite zone morte (0.1f)
+        if (directionMouvement.sqrMagnitude > 0.01f)
         {
             angleCible = Mathf.Atan2(directionMouvement.y, directionMouvement.x) * Mathf.Rad2Deg - 90f;
         }
 
-        // 3. Application de la rotation (EN PERMANENCE, même quand on est à l'arrêt !)
-        // Comme cette ligne s'exécute 50 fois par seconde, même si un mur essaie 
-        // de faire tourner ton cube, le code remettra l'angle droit instantanément.
         float angleLisse = Mathf.LerpAngle(rb.rotation, angleCible, vitesseRotation * Time.fixedUnscaledDeltaTime);
         rb.MoveRotation(angleLisse);
     }
+
+    // --- GESTION DE L'INVENTAIRE ---
 
     public void DebloquerPouvoir(TypePouvoir nouveauPouvoir)
     {
         if (!pouvoirsDebloques.Contains(nouveauPouvoir))
         {
             pouvoirsDebloques.Add(nouveauPouvoir);
-            
-            if (pouvoirsDebloques.Count == 1)
-            {
-                indexPouvoirActuel = 0;
-            }
-            
-            MettreAJourAffichage(); 
+            if (pouvoirsDebloques.Count == 1) indexPouvoirActuel = 0;
+            MettreAJourAffichage();
         }
     }
 
@@ -137,16 +123,10 @@ public class MouvementJoueur : MonoBehaviour
 
     void MettreAJourAffichage()
     {
-        // On vérifie si on a au moins 1 pouvoir
         bool aDesPouvoirs = pouvoirsDebloques.Count > 0;
 
-        // 1. On active ou désactive visuellement tout le fond (et les textes enfants)
-        if (fondHUD != null)
-        {
-            fondHUD.SetActive(aDesPouvoirs);
-        }
+        if (fondHUD != null) fondHUD.SetActive(aDesPouvoirs);
 
-        // 2. Si on a des pouvoirs, on envoie les textes à l'interface
         if (interfacePouvoirs != null && aDesPouvoirs)
         {
             string[] nomsPouvoirs = new string[pouvoirsDebloques.Count];
@@ -157,6 +137,8 @@ public class MouvementJoueur : MonoBehaviour
             interfacePouvoirs.MettreAJourInterface(nomsPouvoirs, indexPouvoirActuel);
         }
     }
+
+    // --- POUVOIRS ---
 
     void UtiliserPouvoirActuel()
     {
@@ -173,13 +155,9 @@ public class MouvementJoueur : MonoBehaviour
         if (CameraShake.Instance != null) CameraShake.Instance.Secouer(0.1f, 0.2f);
         enTrainDeDash = true;
         float vitesseNormale = vitesse;
-        vitesse = vitesse * multiplicateurDash; 
-        
-        // NOUVEAUTÉ : WaitForSecondsRealtime garantit que le Dash dure bien 0.2s en vrai, 
-        // même si le reste du jeu tourne au ralenti.
-        yield return new WaitForSecondsRealtime(dureeDash); 
-        
-        vitesse = vitesseNormale; 
+        vitesse *= multiplicateurDash;
+        yield return new WaitForSecondsRealtime(dureeDash);
+        vitesse = vitesseNormale;
         enTrainDeDash = false;
     }
 
@@ -187,24 +165,16 @@ public class MouvementJoueur : MonoBehaviour
     {
         teleportationPrete = false;
         Vector2 directionSaut = directionMouvement.normalized;
-        if (directionSaut == Vector2.zero) directionSaut = Vector2.up; 
-        
-        RaycastHit2D hit = Physics2D.Raycast(rb.position, directionSaut, distanceTeleportation, LayerMask.GetMask("wall"));
+        if (directionSaut == Vector2.zero) directionSaut = Vector2.up;
 
-        // 1. On calcule la destination cible
+        RaycastHit2D hit = Physics2D.Raycast(rb.position, directionSaut, distanceTeleportation, LayerMask.GetMask("wall"));
         Vector2 destination = (hit.collider != null) ? hit.point - (directionSaut * 0.1f) : rb.position + (directionSaut * distanceTeleportation);
 
-        // 2. On coupe l'interpolation pour éviter l'effet de glissade
         rb.interpolation = RigidbodyInterpolation2D.None;
-        
-        // 3. On téléporte la physique ET le visuel instantanément
         rb.position = destination;
-        transform.position = destination; 
-        
-        // 4. On attend une frame physique pour que le moteur encaisse le choc
+        transform.position = destination;
+
         yield return new WaitForFixedUpdate();
-        
-        // 5. On remet l'interpolation pour que les déplacements redeviennent fluides
         rb.interpolation = RigidbodyInterpolation2D.Interpolate;
 
         yield return new WaitForSecondsRealtime(tempsRechargeTeleportation);
@@ -214,20 +184,11 @@ public class MouvementJoueur : MonoBehaviour
     IEnumerator FaireUnRalenti()
     {
         enTrainDeRalentir = true;
-        
-        // 1. On ralentit le jeu
-        Time.timeScale = facteurRalenti; 
-        
-        // 2. CORRECTION : On accélère l'horloge de la physique pour compenser le ralenti global
-        // 0.02f est la valeur par défaut de base dans Unity
-        Time.fixedDeltaTime = 0.02f * Time.timeScale; 
-
-        yield return new WaitForSecondsRealtime(dureeRalenti); 
-
-        // 3. On remet tout à la normale à la fin du pouvoir
-        Time.timeScale = 1f; 
-        Time.fixedDeltaTime = 0.02f; 
-        
+        Time.timeScale = facteurRalenti;
+        Time.fixedDeltaTime = 0.02f * Time.timeScale;
+        yield return new WaitForSecondsRealtime(dureeRalenti);
+        Time.timeScale = 1f;
+        Time.fixedDeltaTime = 0.02f;
         enTrainDeRalentir = false;
     }
 
@@ -236,10 +197,7 @@ public class MouvementJoueur : MonoBehaviour
         enTrainDeRetrecir = true;
         Vector3 tailleNormale = transform.localScale;
         transform.localScale = tailleNormale * facteurTaille;
-        
-        // NOUVEAUTÉ : Durée de la miniature basée sur le temps réel
-        yield return new WaitForSecondsRealtime(dureeMiniature); 
-        
+        yield return new WaitForSecondsRealtime(dureeMiniature);
         transform.localScale = tailleNormale;
         enTrainDeRetrecir = false;
     }

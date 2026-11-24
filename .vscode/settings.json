@@ -56,5 +56,5 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "MonJeuBAT.sln"
+    "dotnet.defaultSolution": "TestJeu2D.sln"
 }

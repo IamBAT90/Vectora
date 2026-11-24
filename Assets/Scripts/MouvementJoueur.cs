@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 public class MouvementJoueur : MonoBehaviour
 {
-    public enum TypePouvoir { Aucun, Dash, Teleportation, Ralenti, Miniature }
+    public enum TypePouvoir { Aucun, Dash, Teleportation, Ralenti, Miniature, Grandir}
 
     [Header("Déplacement & Rotation")]
     public float vitesse = 5f;
@@ -32,8 +32,12 @@ public class MouvementJoueur : MonoBehaviour
     public float dureeRalenti = 3f;
 
     [Header("Paramètres Miniature")]
-    public float facteurTaille = 0.5f;
+    public float facteurTailleMin = 0.5f;
     public float dureeMiniature = 3f;
+
+    [Header("Paramètres Grandissement")]
+    public float facteurTailleMax = 1.5f; 
+    public float dureeGrandissement = 3f;
 
     private Rigidbody2D rb;
     private Vector2 directionMouvement;
@@ -43,6 +47,7 @@ public class MouvementJoueur : MonoBehaviour
     private bool teleportationPrete = true;
     private bool enTrainDeRalentir = false;
     private bool enTrainDeRetrecir = false;
+    private bool enTrainDeGrandir = false;
 
     void Start()
     {
@@ -148,6 +153,8 @@ public class MouvementJoueur : MonoBehaviour
         else if (pouvoirActif == TypePouvoir.Teleportation && teleportationPrete) StartCoroutine(FaireUneTeleportation());
         else if (pouvoirActif == TypePouvoir.Ralenti && !enTrainDeRalentir) StartCoroutine(FaireUnRalenti());
         else if (pouvoirActif == TypePouvoir.Miniature && !enTrainDeRetrecir) StartCoroutine(FaireUneMiniature());
+        else if (pouvoirActif == TypePouvoir.Grandir && !enTrainDeGrandir) StartCoroutine(FaireUnGrandissement());
+        
     }
 
     IEnumerator FaireUnDash()
@@ -196,7 +203,17 @@ public class MouvementJoueur : MonoBehaviour
     {
         enTrainDeRetrecir = true;
         Vector3 tailleNormale = transform.localScale;
-        transform.localScale = tailleNormale * facteurTaille;
+        transform.localScale = tailleNormale * facteurTailleMin;
+        yield return new WaitForSecondsRealtime(dureeMiniature);
+        transform.localScale = tailleNormale;
+        enTrainDeRetrecir = false;
+    }
+
+    IEnumerator FaireUnGrandissement()
+    {
+        enTrainDeGrandir = true;
+        Vector3 tailleNormale = transform.localScale;
+        transform.localScale = tailleNormale * facteurTailleMax;
         yield return new WaitForSecondsRealtime(dureeMiniature);
         transform.localScale = tailleNormale;
         enTrainDeRetrecir = false;

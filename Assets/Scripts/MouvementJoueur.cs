@@ -42,6 +42,8 @@ public class MouvementJoueur : MonoBehaviour
     private Rigidbody2D rb;
     private Vector2 directionMouvement;
     private float angleCible = 0f;
+    private TrailRenderer trail;
+    private float largeurTraineeNormale;
 
     private bool enTrainDeDash = false;
     private bool teleportationPrete = true;
@@ -50,10 +52,13 @@ public class MouvementJoueur : MonoBehaviour
     private bool enTrainDeGrandir = false;
 
     void Start()
-    {
-        rb = GetComponent<Rigidbody2D>();
-        MettreAJourAffichage();
-    }
+{
+    rb = GetComponent<Rigidbody2D>();
+    trail = GetComponent<TrailRenderer>();
+    if (trail != null) largeurTraineeNormale = trail.widthMultiplier;
+    
+    MettreAJourAffichage();
+}
 
     // --- NOUVELLES FONCTIONS APPELÉES PAR LE PLAYER INPUT ---
 
@@ -180,6 +185,7 @@ public class MouvementJoueur : MonoBehaviour
         rb.interpolation = RigidbodyInterpolation2D.None;
         rb.position = destination;
         transform.position = destination;
+        trail.Clear();
 
         yield return new WaitForFixedUpdate();
         rb.interpolation = RigidbodyInterpolation2D.Interpolate;
@@ -204,8 +210,16 @@ public class MouvementJoueur : MonoBehaviour
         enTrainDeRetrecir = true;
         Vector3 tailleNormale = transform.localScale;
         transform.localScale = tailleNormale * facteurTailleMin;
+
+        // On réduit aussi la traînée
+        if (trail != null) trail.widthMultiplier = largeurTraineeNormale * facteurTailleMin;
+
         yield return new WaitForSecondsRealtime(dureeMiniature);
+
         transform.localScale = tailleNormale;
+        // On remet la traînée à sa taille d'origine
+        if (trail != null) trail.widthMultiplier = largeurTraineeNormale;
+        
         enTrainDeRetrecir = false;
     }
 
@@ -214,8 +228,16 @@ public class MouvementJoueur : MonoBehaviour
         enTrainDeGrandir = true;
         Vector3 tailleNormale = transform.localScale;
         transform.localScale = tailleNormale * facteurTailleMax;
-        yield return new WaitForSecondsRealtime(dureeMiniature);
+
+        // On réduit aussi la traînée
+        if (trail != null) trail.widthMultiplier = largeurTraineeNormale * facteurTailleMax;
+
+        yield return new WaitForSecondsRealtime(dureeGrandissement);
+
         transform.localScale = tailleNormale;
-        enTrainDeRetrecir = false;
+        // On remet la traînée à sa taille d'origine
+        if (trail != null) trail.widthMultiplier = largeurTraineeNormale;
+        
+        enTrainDeGrandir = false;
     }
 }
